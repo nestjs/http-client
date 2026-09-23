@@ -1138,6 +1138,9 @@ describe('HttpClient', () => {
       await expect(client.get('/users/:id', { params: {} })).rejects.toThrow(
         'Missing path parameter "id" for "/users/:id"',
       );
+      await expect(client.get('/users/:id')).rejects.toThrow(
+        'Missing path parameter "id" for "/users/:id": pass it in `params`',
+      );
       expect(fetch).not.toHaveBeenCalled();
     });
 

@@ -7,8 +7,10 @@ import {
   InjectHttpClient,
   getHttpClientToken,
   type HttpClientAsyncOptions,
+  type HttpClientFactoryOptions,
   type HttpClientInterceptor,
   type HttpClientModuleAsyncOptions,
+  type HttpClientModuleFactoryOptions,
   type HttpClientModuleOptionsFactory,
   type HttpClientOptionsFactory,
   type HttpHandler,
@@ -457,7 +459,7 @@ describe('HttpClientModule', () => {
     @Injectable()
     class BillingClientOptions implements HttpClientOptionsFactory {
       constructor(private readonly config: ConfigService) {}
-      createHttpClientOptions() {
+      createHttpClientOptions(): HttpClientFactoryOptions {
         return {
           baseUrl: this.config.get('BILLING_URL'),
           headers: { 'x-client': 'billing' },
@@ -467,7 +469,7 @@ describe('HttpClientModule', () => {
 
     @Injectable()
     class HttpDefaults implements HttpClientModuleOptionsFactory {
-      createHttpClientModuleOptions() {
+      createHttpClientModuleOptions(): HttpClientModuleFactoryOptions {
         return { headers: { 'user-agent': 'acme/2.0' } };
       }
     }
@@ -534,6 +536,37 @@ describe('HttpClientModule', () => {
       .catch((error: unknown) => error);
     expect(String(root)).toContain(
       'HttpClientModule.forRootAsync(): the factory returned the class AuthInterceptor in `interceptors`.',
+    );
+  });
+
+  it('fails at startup when an async factory returns name, isGlobal or imports', async () => {
+    const client = await Test.createTestingModule({
+      imports: [
+        HttpClientModule.registerAsync({
+          useFactory: () => ({ name: 'billing', baseUrl: server.url }),
+        }),
+      ],
+    })
+      .compile()
+      .catch((error: unknown) => error);
+    expect(String(client)).toContain(
+      'HttpClientModule.registerAsync(): the factory returned `name`, which decides how the module ' +
+        'is registered and has to be known before the factory runs. Pass it next to ' +
+        'useFactory/useClass instead.',
+    );
+
+    const root = await Test.createTestingModule({
+      imports: [
+        HttpClientModule.forRootAsync({
+          // @ts-expect-error: isGlobal goes next to useFactory (a factory-only result is caught here)
+          useFactory: () => ({ isGlobal: false }),
+        }),
+      ],
+    })
+      .compile()
+      .catch((error: unknown) => error);
+    expect(String(root)).toContain(
+      'HttpClientModule.forRootAsync(): the factory returned `isGlobal`',
     );
   });
 

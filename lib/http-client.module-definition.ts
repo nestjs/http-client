@@ -47,13 +47,19 @@ const HTTP_CLIENT_INITIALIZER = Symbol('HTTP_CLIENT_INITIALIZER');
  */
 type InterceptorInstance = HttpClientInterceptorFn | HttpClientInterceptor;
 
-/** What `registerAsync()`'s factory returns. */
-type ClientFactoryOptions = Omit<HttpClientOptions, 'interceptors'> & {
+/** What `registerAsync()`'s factory (or `createHttpClientOptions()`) returns. */
+export type HttpClientFactoryOptions = Omit<
+  HttpClientOptions,
+  'interceptors'
+> & {
   interceptors?: InterceptorInstance[];
 };
 
-/** What `forRootAsync()`'s factory returns. */
-type RootFactoryOptions = Omit<HttpClientModuleOptions, 'interceptors'> & {
+/** What `forRootAsync()`'s factory (or `createHttpClientModuleOptions()`) returns. */
+export type HttpClientModuleFactoryOptions = Omit<
+  HttpClientModuleOptions,
+  'interceptors'
+> & {
   interceptors?: InterceptorInstance[];
 };
 
@@ -88,7 +94,7 @@ export type HttpClientRootOptions = HttpClientModuleOptions &
   Pick<StructuralExtras, 'imports'>;
 
 export const { ConfigurableModuleClass, OPTIONS_TYPE, ASYNC_OPTIONS_TYPE } =
-  new ConfigurableModuleBuilder<ClientFactoryOptions>({
+  new ConfigurableModuleBuilder<HttpClientFactoryOptions>({
     optionsInjectionToken: CLIENT_OPTIONS,
   })
     .setClassMethodName('register')
@@ -123,7 +129,7 @@ export const {
   ConfigurableModuleClass: RootConfigurableModuleClass,
   OPTIONS_TYPE: ROOT_OPTIONS_TYPE,
   ASYNC_OPTIONS_TYPE: ROOT_ASYNC_OPTIONS_TYPE,
-} = new ConfigurableModuleBuilder<RootFactoryOptions>({
+} = new ConfigurableModuleBuilder<HttpClientModuleFactoryOptions>({
   optionsInjectionToken: HTTP_CLIENT_MODULE_OPTIONS,
 })
   .setClassMethodName('forRoot')
@@ -157,7 +163,7 @@ export type HttpClientModuleAsyncOptions = typeof ROOT_ASYNC_OPTIONS_TYPE;
  */
 export interface HttpClientOptionsFactory {
   createHttpClientOptions():
-    ClientFactoryOptions | Promise<ClientFactoryOptions>;
+    HttpClientFactoryOptions | Promise<HttpClientFactoryOptions>;
 }
 
 /**
@@ -167,7 +173,7 @@ export interface HttpClientOptionsFactory {
  */
 export interface HttpClientModuleOptionsFactory {
   createHttpClientModuleOptions():
-    RootFactoryOptions | Promise<RootFactoryOptions>;
+    HttpClientModuleFactoryOptions | Promise<HttpClientModuleFactoryOptions>;
 }
 
 /**
@@ -196,7 +202,7 @@ function createRootInterceptors(
     inject: [HTTP_CLIENT_MODULE_OPTIONS, ModuleRef],
     // Checks the forRootAsync() factory's result at startup, even with no clients yet
     useFactory: (
-      options: RootFactoryOptions | undefined,
+      options: HttpClientModuleFactoryOptions | undefined,
       moduleRef: ModuleRef,
     ): RootInterceptors => {
       const entries = pickInterceptors(topLevel, options, 'forRootAsync');
@@ -232,9 +238,9 @@ function createClientProvider(token: string | typeof HttpClient): Provider {
       ModuleRef,
     ],
     useFactory: (
-      options: ClientFactoryOptions,
+      options: HttpClientFactoryOptions,
       topLevel: HttpClientInterceptorLike[] | undefined,
-      defaults: RootFactoryOptions | undefined,
+      defaults: HttpClientModuleFactoryOptions | undefined,
       root: RootInterceptors | undefined,
       moduleRef: ModuleRef,
     ) => {
@@ -264,6 +270,16 @@ function pickInterceptors(
   options: { interceptors?: unknown[] } | undefined,
   method: 'registerAsync' | 'forRootAsync',
 ): HttpClientInterceptorLike[] {
+  const structural = (['name', 'isGlobal', 'imports'] as const).find(
+    (key) => options && key in options,
+  );
+  if (structural) {
+    throw new Error(
+      `HttpClientModule.${method}(): the factory returned \`${structural}\`, which decides how ` +
+        'the module is registered and has to be known before the factory runs. Pass it next to ' +
+        'useFactory/useClass instead.',
+    );
+  }
   const fromFactory = options?.interceptors;
   if (fromFactory === undefined) return topLevel ?? [];
   if (topLevel !== undefined) {

@@ -4,6 +4,8 @@ export {
   HTTP_CLIENT_MODULE_OPTIONS,
   getHttpClientToken,
   type HttpClientAsyncOptions,
+  type HttpClientFactoryOptions,
+  type HttpClientModuleFactoryOptions,
   type HttpClientModuleAsyncOptions,
   type HttpClientModuleOptionsFactory,
   type HttpClientOptionsFactory,

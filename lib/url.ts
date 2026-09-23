@@ -14,7 +14,15 @@ export function applyPathParams(
   path: string,
   params?: Record<string, string | number>,
 ): string {
-  if (!params) return path;
+  if (!params) {
+    const [placeholder] = path.match(PLACEHOLDER) ?? [];
+    if (placeholder) {
+      throw new TypeError(
+        `Missing path parameter "${placeholder.slice(1)}" for "${path}": pass it in \`params\``,
+      );
+    }
+    return path;
+  }
   const used = new Set<string>();
   const result = path.replace(PLACEHOLDER, (_, name: string) => {
     const value = params[name];
