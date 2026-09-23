@@ -1,0 +1,17 @@
+# source
+lib
+tests
+package-lock.json
+tsconfig.json
+.prettierrc
+
+# github
+.github
+CONTRIBUTING.md
+renovate.json
+# tooling
+.husky
+.commitlintrc.json
+.release-it.json
+tsconfig.build.json
+vitest.config.ts
