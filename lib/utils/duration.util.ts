@@ -1,8 +1,23 @@
-// Copied from packages/workflows/src/duration.ts (the family's shared duration format).
+import type { Duration } from '../types/duration.type.js';
+import { MAX_TIMER_MS } from './timers.util.js';
 
-/** Milliseconds, or a string such as `"250ms"`, `"30s"`, `"15m"`, `"6h"`, `"3d"`, `"1w"`. */
-export type Duration =
-  number | `${number}${'ms' | 's' | 'm' | 'h' | 'd' | 'w'}`;
+/** `toMs()` with the option's name in the error, e.g. "HttpClient `timeout`: Invalid duration …". */
+export function durationOption(value: Duration, option: string): number {
+  let ms: number;
+  try {
+    ms = toMs(value);
+  } catch (error) {
+    throw new TypeError(
+      `HttpClient \`${option}\`: ${(error as Error).message}`,
+    );
+  }
+  if (ms > MAX_TIMER_MS) {
+    throw new TypeError(
+      `HttpClient \`${option}\`: ${JSON.stringify(value)} is longer than a timer can wait (about 24.8 days)`,
+    );
+  }
+  return ms;
+}
 
 const UNITS: Record<string, number> = {
   ms: 1,

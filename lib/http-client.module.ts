@@ -1,13 +1,13 @@
-import { Module, type DynamicModule } from '@nestjs/common';
+import { type DynamicModule, Module } from '@nestjs/common';
 import {
   ConfigurableModuleClass,
-  OPTIONS_TYPE,
-  ROOT_OPTIONS_TYPE,
-  RootConfigurableModuleClass,
   type HttpClientAsyncOptions,
   type HttpClientModuleAsyncOptions,
   type HttpClientRegisterOptions,
   type HttpClientRootOptions,
+  OPTIONS_TYPE,
+  ROOT_OPTIONS_TYPE,
+  RootConfigurableModuleClass,
 } from './http-client.module-definition.js';
 
 /**

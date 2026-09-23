@@ -1,15 +1,13 @@
-import { STATUS_CODES } from 'node:http';
 import {
   BadGatewayException,
   GatewayTimeoutException,
   HttpException,
   Logger,
 } from '@nestjs/common';
-import {
-  HttpClientError,
-  HttpResponseError,
-  HttpTimeoutError,
-} from './http-client.errors.js';
+import { STATUS_CODES } from 'node:http';
+import { HttpClientError } from '../errors/http-client.error.js';
+import { HttpResponseError } from '../errors/http-response.error.js';
+import { HttpTimeoutError } from '../errors/http-timeout.error.js';
 
 export interface ToHttpExceptionOptions {
   /**
@@ -42,10 +40,12 @@ export function toHttpException(
   error: HttpClientError,
   options?: ToHttpExceptionOptions,
 ): HttpException;
+
 export function toHttpException(
   error: unknown,
   options?: ToHttpExceptionOptions,
 ): unknown;
+
 export function toHttpException(
   error: unknown,
   options: ToHttpExceptionOptions = {},
@@ -64,7 +64,7 @@ export function toHttpException(
   return exception;
 }
 
-function map(
+export function map(
   error: unknown,
   forward: ToHttpExceptionOptions['forward'],
 ): HttpException | undefined {

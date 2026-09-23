@@ -1,4 +1,7 @@
-import type { HttpQuery, QueryValue } from './http-client.options.js';
+import type {
+  HttpQuery,
+  QueryValue,
+} from '../interfaces/http-request.interface.js';
 
 const ABSOLUTE = /^[a-z][a-z\d+\-.]*:/i;
 
@@ -151,7 +154,7 @@ function checkUrl(url: URL, fail: (problem: string) => never): void {
   }
 }
 
-function stringify(value: QueryValue): string {
+export function stringify(value: QueryValue): string {
   return value instanceof Date ? value.toISOString() : String(value);
 }
 

@@ -10,7 +10,7 @@ export {
   type HttpClientModuleOptionsFactory,
   type HttpClientOptionsFactory,
 } from './http-client.module-definition.js';
-export { InjectHttpClient } from './inject-http-client.decorator.js';
+export * from './decorators/index.js';
 
 // Client: requests and their options
 export { HttpClient } from './http-client.js';
@@ -25,8 +25,8 @@ export type {
   HttpResponse,
   HttpResponseType,
   HttpRetryOptions,
-} from './http-client.options.js';
-export type { Duration } from './duration.js';
+} from './interfaces/index.js';
+export type { Duration } from './types/index.js';
 
 // Interceptors: implemented by the app
 export type {
@@ -34,17 +34,11 @@ export type {
   HttpClientInterceptorFn,
   HttpHandler,
   HttpRequest,
-} from './http-client.options.js';
+} from './interfaces/index.js';
 
 // Errors: caught by the app, and mapped to Nest exceptions in one place
-export {
-  HttpClientError,
-  HttpNetworkError,
-  HttpParseError,
-  HttpResponseError,
-  HttpTimeoutError,
-} from './http-client.errors.js';
+export * from './errors/index.js';
 export {
   toHttpException,
   type ToHttpExceptionOptions,
-} from './to-http-exception.js';
+} from './utils/to-http-exception.util.js';

@@ -1,8 +1,75 @@
-import { toMs, type Duration } from './duration.js';
+import { HttpNetworkError } from '../errors/http-network.error.js';
+import { HttpTimeoutError } from '../errors/http-timeout.error.js';
+import type { HttpRequest } from '../interfaces/http-request.interface.js';
 import type {
   HttpBackoffOptions,
   HttpRetryOptions,
-} from './http-client.options.js';
+} from '../interfaces/http-retry-options.interface.js';
+import type { Duration } from '../types/duration.type.js';
+import { durationOption } from './duration.util.js';
+import { toResponseError } from './response.util.js';
+import { parseRetryAfter } from './retry-after.util.js';
+
+/**
+ * Asks `retryIf`, which may only narrow the defaults. What it throws
+ * propagates, like a bug anywhere else; a Promise is refused, since it would
+ * always count as `true`.
+ */
+export function shouldRetry(
+  retry: ResolvedRetry,
+  error: unknown,
+  attempt: number,
+): boolean {
+  if (!retry.retryIf) return true;
+  const verdict: unknown = retry.retryIf(error, attempt);
+  if (
+    typeof (verdict as PromiseLike<unknown> | undefined)?.then === 'function'
+  ) {
+    (verdict as Promise<unknown>).then(undefined, () => undefined);
+    throw new TypeError(
+      'HttpClient `retry.retryIf` must return a boolean, not a Promise',
+    );
+  }
+  return !!verdict;
+}
+
+/**
+ * The wait before retrying a response with a retryable status, or `undefined`
+ * to stop. `Retry-After` replaces the backoff, and one longer than
+ * `maxDelay` is not waited out.
+ */
+export async function retryDelay(
+  retry: ResolvedRetry,
+  response: Response,
+  request: HttpRequest,
+  attempt: number,
+  signal: AbortSignal | undefined,
+): Promise<number | undefined> {
+  // User code sees the failure as an HttpResponseError; read from a clone, so
+  // the response can still be returned or thrown when there is no retry.
+  const error =
+    retry.retryIf || typeof retry.backoff === 'function'
+      ? await toResponseError(response.clone(), request, signal)
+      : undefined;
+  if (retry.retryIf && !shouldRetry(retry, error, attempt)) return undefined;
+  const retryAfter = parseRetryAfter(response.headers.get('retry-after'));
+  if (retryAfter !== undefined)
+    return retryAfter <= retry.maxRetryAfter ? retryAfter : undefined;
+  return backoffDelay(retry, attempt, error);
+}
+
+/**
+ * Connection-level failures and timeouts. A network error without a `code`
+ * (a redirect that `redirect: 'error'` refused, too many redirects) fails the
+ * same way on every attempt.
+ */
+export function isTransient(error: unknown): boolean {
+  if (error instanceof HttpTimeoutError) return true;
+  return (
+    error instanceof HttpNetworkError &&
+    typeof (error.cause as { code?: unknown } | undefined)?.code === 'string'
+  );
+}
 
 export type RetryInput = number | false | HttpRetryOptions | undefined;
 
@@ -136,90 +203,6 @@ export function backoffDelay(
     default:
       return Math.floor(random() * ceiling);
   }
-}
-
-const DAY = '(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)';
-const WEEKDAY = '(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)';
-const MONTH = '(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)';
-const TIME = '\\d{2}:\\d{2}:\\d{2}';
-/** The three HTTP-date forms (RFC 9110 §5.6.7): IMF-fixdate, RFC 850, asctime. */
-const HTTP_DATE = [
-  new RegExp(`^${DAY}, \\d{2} ${MONTH} \\d{4} ${TIME} GMT$`, 'i'),
-  new RegExp(`^${WEEKDAY}, \\d{2}-${MONTH}-\\d{2} ${TIME} GMT$`, 'i'),
-  new RegExp(`^${DAY} ${MONTH} [ \\d]\\d ${TIME} \\d{4}$`, 'i'),
-];
-
-/**
- * `Retry-After` as delay-seconds or an HTTP-date → ms; `undefined` when absent
- * or malformed (the backoff applies then). A date in the past is 0.
- */
-export function parseRetryAfter(
-  value: string | null,
-  now = Date.now(),
-): number | undefined {
-  if (!value) return undefined;
-  const trimmed = value.trim();
-  // Delay-seconds; fractions are tolerated, signs and exponents aren't
-  if (/^\d+(?:\.\d+)?$/.test(trimmed)) return Math.ceil(Number(trimmed) * 1000);
-  const form = HTTP_DATE.findIndex((pattern) => pattern.test(trimmed));
-  if (form === -1) return undefined;
-  // asctime has no zone; HTTP-dates are always GMT
-  const date = Date.parse(form === 2 ? `${trimmed} GMT` : trimmed);
-  if (Number.isNaN(date)) return undefined;
-  return Math.max(0, date - now);
-}
-
-/** Stream bodies are consumed by the first attempt and can't be replayed. */
-export function isReplayableBody(body: unknown): boolean {
-  if (body === null || body === undefined) return true;
-  if (
-    typeof body === 'string' ||
-    body instanceof Uint8Array ||
-    body instanceof ArrayBuffer
-  )
-    return true;
-  if (body instanceof ReadableStream) return false;
-  return (
-    typeof (body as { [Symbol.asyncIterator]?: unknown })[
-      Symbol.asyncIterator
-    ] !== 'function'
-  );
-}
-
-export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (signal?.aborted) return reject(signal.reason);
-    const onAbort = () => {
-      clearTimeout(timer);
-      reject(signal!.reason);
-    };
-    const timer = setTimeout(() => {
-      signal?.removeEventListener('abort', onAbort);
-      resolve();
-    }, ms);
-    signal?.addEventListener('abort', onAbort, { once: true });
-  });
-}
-
-/** The longest delay `setTimeout` supports (about 24.8 days); longer ones fire at once. */
-const MAX_TIMER_MS = 2_147_483_647;
-
-/** `toMs()` with the option's name in the error, e.g. "HttpClient `timeout`: Invalid duration …". */
-export function durationOption(value: Duration, option: string): number {
-  let ms: number;
-  try {
-    ms = toMs(value);
-  } catch (error) {
-    throw new TypeError(
-      `HttpClient \`${option}\`: ${(error as Error).message}`,
-    );
-  }
-  if (ms > MAX_TIMER_MS) {
-    throw new TypeError(
-      `HttpClient \`${option}\`: ${JSON.stringify(value)} is longer than a timer can wait (about 24.8 days)`,
-    );
-  }
-  return ms;
 }
 
 function definedOnly<T extends object>(value: T): Partial<T> {

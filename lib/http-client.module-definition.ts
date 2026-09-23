@@ -6,20 +6,20 @@ import {
   type Type,
 } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
-import {
-  createHttpClient,
-  HttpClient,
-  initHttpClient,
-  isInterceptorClass,
-  mergeClientOptions,
-} from './http-client.js';
+import { HttpClient, createHttpClient, initHttpClient } from './http-client.js';
 import type {
   HttpClientInterceptor,
   HttpClientInterceptorFn,
   HttpClientInterceptorLike,
+} from './interfaces/http-client-interceptor.interface.js';
+import type {
   HttpClientModuleOptions,
   HttpClientOptions,
-} from './http-client.options.js';
+} from './interfaces/http-client-options.interface.js';
+import {
+  isInterceptorClass,
+  mergeClientOptions,
+} from './utils/client-options.util.js';
 
 /**
  * The `forRoot()`/`forRootAsync()` options: defaults for every client. Its
@@ -35,8 +35,11 @@ export function getHttpClientToken(name?: string): string | typeof HttpClient {
 
 /** Each `register*()` module's own options (internal: one per dynamic module). */
 const CLIENT_OPTIONS = Symbol('HTTP_CLIENT_OPTIONS');
+
 const CLIENT_INTERCEPTORS = Symbol('HTTP_CLIENT_INTERCEPTORS');
+
 const ROOT_INTERCEPTORS = Symbol('HTTP_CLIENT_ROOT_INTERCEPTORS');
+
 /** Resolves the client's interceptors on `onModuleInit`, once every provider exists. */
 const HTTP_CLIENT_INITIALIZER = Symbol('HTTP_CLIENT_INITIALIZER');
 
@@ -308,7 +311,7 @@ function pickInterceptors(
  * it (the client's, or `forRoot()`'s), which sees that module's `imports` and
  * global modules.
  */
-async function resolveInterceptor(
+export async function resolveInterceptor(
   moduleRef: ModuleRef,
   type: Type<HttpClientInterceptor>,
 ): Promise<HttpClientInterceptor> {

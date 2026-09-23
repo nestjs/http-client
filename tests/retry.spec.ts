@@ -1,13 +1,13 @@
 import { Readable } from 'node:stream';
+import { isReplayableBody } from '../lib/utils/request-body.util.js';
+import { parseRetryAfter } from '../lib/utils/retry-after.util.js';
 import {
   DEFAULT_RETRY,
   backoffDelay,
-  isReplayableBody,
   mergeRetry,
-  parseRetryAfter,
   resolveRetry,
   type RetryInput,
-} from '../lib/retry.js';
+} from '../lib/utils/retry.util.js';
 
 const resolve = (...layers: RetryInput[]) =>
   resolveRetry(layers.reduce(mergeRetry, undefined));
