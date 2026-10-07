@@ -418,6 +418,9 @@ describe('HttpClient', () => {
     expect(seen[0]).toBeInstanceOf(HttpTimeoutError);
     expect(error).toBe(seen[0]);
     expect(error.cause).toBeInstanceOf(DOMException);
+    // The server may record the aborted request only after the client gave up;
+    // wait for it so it doesn't land in the next test's `server.requests`
+    await vi.waitFor(() => expect(server.requests).toHaveLength(1));
   });
 
   describe('retries', () => {
