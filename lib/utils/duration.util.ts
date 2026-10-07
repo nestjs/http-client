@@ -1,19 +1,29 @@
 import type { Duration } from '../types/duration.type.js';
 import { MAX_TIMER_MS } from './timers.util.js';
 
-/** `toMs()` with the option's name in the error, e.g. "HttpClient `timeout`: Invalid duration …". */
-export function durationOption(value: Duration, option: string): number {
+/**
+ * `toMs()` with the option's name in the error, e.g. "HttpClient `timeout`:
+ * Invalid duration …". `cause`, when given, becomes the TypeError's `cause`.
+ */
+export function durationOption(
+  value: Duration,
+  option: string,
+  cause?: unknown,
+): number {
+  const options = cause === undefined ? undefined : { cause };
   let ms: number;
   try {
     ms = toMs(value);
   } catch (error) {
     throw new TypeError(
       `HttpClient \`${option}\`: ${(error as Error).message}`,
+      options,
     );
   }
   if (ms > MAX_TIMER_MS) {
     throw new TypeError(
       `HttpClient \`${option}\`: ${JSON.stringify(value)} is longer than a timer can wait (about 24.8 days)`,
+      options,
     );
   }
   return ms;

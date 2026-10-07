@@ -107,6 +107,33 @@ describe('retry helpers', () => {
     expect(retry.maxRetryAfter).toBe(30_000);
   });
 
+  it('keeps the failure as the cause when a backoff function returns an invalid duration', () => {
+    const failure = new Error('ECONNREFUSED');
+    for (const [duration, message] of [
+      ['5 s', 'HttpClient `retry.backoff()`: Invalid duration "5 s"'],
+      ['4w', 'HttpClient `retry.backoff()`: "4w" is longer than a timer can'],
+    ]) {
+      const retry = resolveRetry({ backoff: () => duration as '5s' })!;
+      expect(() => backoffDelay(retry, 1, failure)).toThrow(
+        expect.objectContaining({
+          name: 'TypeError',
+          message: expect.stringContaining(message),
+          cause: failure,
+        }),
+      );
+    }
+    // What the function itself throws propagates unchanged
+    const thrown = new Error('bug in backoff');
+    const throwing = resolveRetry({
+      backoff: () => {
+        throw thrown;
+      },
+    })!;
+    expect(() => backoffDelay(throwing, 1, failure)).toThrow(
+      expect.toSatisfy((error) => error === thrown),
+    );
+  });
+
   it('layers retry options on the defaults; false disables, a number means attempts', () => {
     expect(resolve()).toMatchObject({ attempts: DEFAULT_RETRY.attempts });
     expect(resolve(false)).toBeUndefined();

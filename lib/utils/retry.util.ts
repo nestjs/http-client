@@ -182,7 +182,9 @@ function resolveBackoff(options: HttpBackoffOptions = {}): ResolvedBackoff {
 /**
  * The wait after attempt `attempt` (1-based) failed with `error`:
  * `min(maxDelay, delay * factor^(attempt-1))`, jittered. `full` picks a random
- * wait in [0, d], `equal` in [d/2, d], `none` waits exactly d.
+ * wait in [0, d], `equal` in [d/2, d], `none` waits exactly d. An invalid
+ * Duration from a backoff function throws a TypeError with `error` as its
+ * `cause`; what the function throws propagates unchanged.
  */
 export function backoffDelay(
   retry: ResolvedRetry,
@@ -191,7 +193,11 @@ export function backoffDelay(
   random: () => number = Math.random,
 ): number {
   if (typeof retry.backoff === 'function') {
-    return durationOption(retry.backoff(attempt, error), 'retry.backoff()');
+    return durationOption(
+      retry.backoff(attempt, error),
+      'retry.backoff()',
+      error,
+    );
   }
   const { delay, factor, maxDelay, jitter } = retry.backoff;
   const ceiling = Math.min(maxDelay, delay * factor ** (attempt - 1));
