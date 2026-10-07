@@ -13,24 +13,24 @@ export interface HttpDispatcher {
 
 /** Settings that `forRoot()`, a client and a single request can each set; the most specific wins. */
 export interface HttpSharedOptions {
-  headers?: HttpHeadersInit;
+  headers?: HttpHeadersInit | undefined;
   /**
    * Per-attempt limit, e.g. `'5s'` or `5_000`: until the body is read, or
    * until the headers arrive for `stream`/`response`. `0` means none. Default none.
    */
-  timeout?: Duration;
+  timeout?: Duration | undefined;
   /** A number is shorthand for `{ attempts }`; `false` makes a single attempt. */
-  retry?: number | false | HttpRetryOptions;
+  retry?: number | false | HttpRetryOptions | undefined;
   /** Throw `HttpResponseError` for non-2xx. Default `true`. */
-  throwOnHttpError?: boolean;
+  throwOnHttpError?: boolean | undefined;
   /**
    * How `fetch` handles 3xx responses. Default `follow`. A redirect to another
    * origin drops `authorization` and `cookie`, but not other headers, such as
    * an `x-api-key`.
    */
-  redirect?: 'follow' | 'error' | 'manual';
+  redirect?: 'follow' | 'error' | 'manual' | undefined;
   /** Connection pool, proxy or TLS settings (an undici `Agent` or `ProxyAgent`). */
-  dispatcher?: HttpDispatcher;
+  dispatcher?: HttpDispatcher | undefined;
 }
 
 export interface HttpClientOptions extends HttpSharedOptions {
@@ -39,11 +39,11 @@ export interface HttpClientOptions extends HttpSharedOptions {
    * URL without credentials, query or fragment. An absolute request URL must
    * be on its origin.
    */
-  baseUrl?: string | URL;
+  baseUrl?: string | URL | undefined;
   /** Run in order, first = outermost. `forRoot()` interceptors run before these. */
-  interceptors?: HttpClientInterceptorLike[];
+  interceptors?: HttpClientInterceptorLike[] | undefined;
   /** `fetch` implementation. Default `globalThis.fetch`, looked up on every request. */
-  fetch?: typeof globalThis.fetch;
+  fetch?: typeof globalThis.fetch | undefined;
 }
 
 /** `HttpClientModule.forRoot()`: defaults for every client in the app. */

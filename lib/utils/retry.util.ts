@@ -89,7 +89,7 @@ export interface ResolvedRetry {
   backoff: ResolvedBackoff | BackoffFn;
   /** Longest wait a `Retry-After` may ask for (`backoff.maxDelay`, or the default). */
   maxRetryAfter: number;
-  retryIf?: (error: unknown, attempt: number) => boolean;
+  retryIf?: ((error: unknown, attempt: number) => boolean) | undefined;
 }
 
 const DEFAULT_BACKOFF: ResolvedBackoff = {

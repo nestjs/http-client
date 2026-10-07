@@ -50,18 +50,18 @@ export interface HttpRequest {
 
 export interface HttpRequestOptions extends HttpSharedOptions {
   /** Only used by `request()`; the verb methods set it. Default GET. */
-  method?: string;
-  query?: HttpQuery;
+  method?: string | undefined;
+  query?: HttpQuery | undefined;
   /**
    * Fills `/:name` segments of the URL, URI-encoded. Every key must match a
    * segment, and a value can't be empty, `.` or `..`.
    */
-  params?: Record<string, string | number>;
+  params?: Record<string, string | number> | undefined;
   /** Serialized with `JSON.stringify`; sets `content-type: application/json`. */
   json?: unknown;
   /** Raw body, passed to fetch as is. Mutually exclusive with `json`. */
-  body?: HttpRequestBody;
-  responseType?: HttpResponseType;
-  signal?: AbortSignal;
-  context?: Record<string, unknown>;
+  body?: HttpRequestBody | undefined;
+  responseType?: HttpResponseType | undefined;
+  signal?: AbortSignal | undefined;
+  context?: Record<string, unknown> | undefined;
 }

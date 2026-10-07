@@ -107,7 +107,7 @@ export class HttpClient {
   private readonly retry: RetryInput;
   /** Outside Nest, class interceptors are created with `new`. */
   private resolveInterceptor: InterceptorResolver = (type) => new type();
-  private interceptorFns?: Promise<HttpClientInterceptorFn[]>;
+  private interceptorFns?: Promise<HttpClientInterceptorFn[]> | undefined;
 
   /** Throws a `TypeError` naming the option for an invalid `baseUrl`, duration or interceptor. */
   constructor(options: HttpClientOptions = {}) {
@@ -323,7 +323,7 @@ export class HttpClient {
       Transport & { duplex?: 'half' } = {
       method: req.method,
       headers: req.headers,
-      body: req.body as RequestInit['body'],
+      body: req.body as Exclude<RequestInit['body'], undefined>,
       signal: req.signal,
     };
     if (transport.redirect) init.redirect = transport.redirect;
