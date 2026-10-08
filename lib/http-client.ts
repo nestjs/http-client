@@ -110,7 +110,7 @@ export class HttpClient {
   private resolveInterceptor: InterceptorResolver = (type) => new type();
   private interceptorFns?: Promise<HttpClientInterceptorFn[]> | undefined;
 
-  /** Throws a `TypeError` naming the option for an invalid `baseUrl`, duration or interceptor. */
+  /** Throws a `TypeError` naming the option for an invalid `baseUrl`, duration, retry option or interceptor. */
   constructor(options: HttpClientOptions = {}) {
     this.config = options;
     this.baseUrl = parseBaseUrl(options.baseUrl);

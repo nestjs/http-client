@@ -136,8 +136,8 @@ function mergeBackoff(
 
 /**
  * Applies the defaults. `undefined` means a single attempt. Throws a
- * `TypeError` naming the option for an invalid duration, so a bad client
- * config fails when the client is created.
+ * `TypeError` naming the option for an invalid duration, attempt count,
+ * factor or jitter, so a bad client config fails when the client is created.
  */
 export function resolveRetry(input: RetryInput): ResolvedRetry | undefined {
   if (input === false) return undefined;
@@ -147,8 +147,8 @@ export function resolveRetry(input: RetryInput): ResolvedRetry | undefined {
     typeof options.backoff === 'function'
       ? options.backoff
       : resolveBackoff(options.backoff);
-  const attempts = options.attempts ?? DEFAULT_RETRY.attempts;
-  if (!(attempts > 1)) return undefined;
+  const attempts = attemptsOption(options.attempts ?? DEFAULT_RETRY.attempts);
+  if (attempts <= 1) return undefined;
   return {
     attempts,
     methods: (options.methods ?? DEFAULT_RETRY.methods).map((method) =>
@@ -170,13 +170,60 @@ function resolveBackoff(options: HttpBackoffOptions = {}): ResolvedBackoff {
       options.delay === undefined
         ? DEFAULT_BACKOFF.delay
         : durationOption(options.delay, 'retry.backoff.delay'),
-    factor: options.factor ?? DEFAULT_BACKOFF.factor,
+    factor:
+      options.factor === undefined
+        ? DEFAULT_BACKOFF.factor
+        : factorOption(options.factor),
     maxDelay:
       options.maxDelay === undefined
         ? DEFAULT_BACKOFF.maxDelay
         : durationOption(options.maxDelay, 'retry.backoff.maxDelay'),
-    jitter: options.jitter ?? DEFAULT_BACKOFF.jitter,
+    jitter:
+      options.jitter === undefined
+        ? DEFAULT_BACKOFF.jitter
+        : jitterOption(options.jitter),
   };
+}
+
+/**
+ * A whole number; `0` and `1` both make a single attempt. `NaN` (e.g.
+ * `Number(process.env.UNSET)`) and `Infinity` (retry forever) are mistakes.
+ */
+function attemptsOption(value: number): number {
+  if (Number.isSafeInteger(value) && value >= 0) return value;
+  throw new TypeError(
+    `HttpClient \`retry.attempts\`: Invalid number of attempts ${show(value)}. ` +
+      'Use a whole number, e.g. 3; 1 or `false` makes a single attempt.',
+  );
+}
+
+/** `NaN` would make every wait after the first ~1 ms; a negative one, too. */
+function factorOption(value: number): number {
+  if (Number.isFinite(value) && value >= 0) return value;
+  throw new TypeError(
+    `HttpClient \`retry.backoff.factor\`: Invalid factor ${show(value)}. ` +
+      'Use a non-negative number; 1 keeps the delay constant.',
+  );
+}
+
+const JITTER_MODES: readonly ResolvedBackoff['jitter'][] = [
+  'full',
+  'equal',
+  'none',
+];
+
+function jitterOption(value: string): ResolvedBackoff['jitter'] {
+  if ((JITTER_MODES as readonly string[]).includes(value))
+    return value as ResolvedBackoff['jitter'];
+  throw new TypeError(
+    `HttpClient \`retry.backoff.jitter\`: Invalid jitter ${show(value)}. ` +
+      'Use "full", "equal" or "none".',
+  );
+}
+
+/** Strings quoted, as `toMs()` does; `NaN` and `Infinity` as themselves, not as JSON's `null`. */
+function show(value: unknown): string {
+  return typeof value === 'string' ? JSON.stringify(value) : String(value);
 }
 
 /**
