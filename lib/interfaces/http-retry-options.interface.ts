@@ -25,6 +25,8 @@ export interface HttpRetryOptions {
   /**
    * Wait between attempts. A function gets the attempt that just failed
    * (1-based) and its error. A `Retry-After` header replaces it either way.
+   * An invalid Duration fails the request with a `TypeError` whose `cause` is
+   * that error; what the function throws propagates unchanged.
    */
   backoff?:
     HttpBackoffOptions | ((attempt: number, error: unknown) => Duration);

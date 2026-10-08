@@ -744,6 +744,26 @@ describe('HttpClient', () => {
       expect(backoff.mock.calls.map(([attempt]) => attempt)).toEqual([1, 2]);
       expect(backoff.mock.calls[0][1]).toBeInstanceOf(HttpResponseError);
     });
+
+    it('keeps the failure as the cause when a backoff function returns an invalid duration', async () => {
+      const closed = await startServer(() => undefined);
+      await closed.close();
+      failures.flaky = 1;
+      failures['reset-body'] = 1;
+      const client = new HttpClient({
+        retry: { backoff: () => '5 s' as '5s' },
+      });
+      // A connection error, a retryable status, a reset while reading the body
+      for (const [url, failure] of [
+        [`${closed.url}/`, HttpNetworkError],
+        [`${server.url}/flaky`, HttpResponseError],
+        [`${server.url}/reset-body`, HttpNetworkError],
+      ] as const) {
+        const error = await client.get(url).catch((e) => e);
+        expect(error, url).toBeInstanceOf(TypeError);
+        expect(error.cause, url).toBeInstanceOf(failure);
+      }
+    });
   });
 
   describe('failures while reading the body', () => {
