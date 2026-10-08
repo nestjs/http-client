@@ -24,6 +24,7 @@ import {
 } from './utils/client-options.util.js';
 import { durationOption } from './utils/duration.util.js';
 import { mergeHeaders } from './utils/headers.util.js';
+import { fetchWithinOrigin } from './utils/redirect.util.js';
 import {
   claimStreamBody,
   isReplayableBody,
@@ -330,7 +331,10 @@ export class HttpClient {
     if (transport.dispatcher) init.dispatcher = transport.dispatcher;
     if (!isReplayableBody(req.body)) init.duplex = 'half';
     try {
-      return await fetchImpl(req.url, init as RequestInit);
+      // With a `baseUrl` and no explicit `redirect`, redirects are followed on the client's origin only
+      return this.baseUrl && !transport.redirect
+        ? await fetchWithinOrigin(fetchImpl, req.url, init, this.baseUrl.origin)
+        : await fetchImpl(req.url, init as RequestInit);
     } catch (error) {
       if (req.signal.aborted) throw error;
       throw new HttpNetworkError({

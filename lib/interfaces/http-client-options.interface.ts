@@ -24,9 +24,11 @@ export interface HttpSharedOptions {
   /** Throw `HttpResponseError` for non-2xx. Default `true`. */
   throwOnHttpError?: boolean | undefined;
   /**
-   * How `fetch` handles 3xx responses. Default `follow`. A redirect to another
-   * origin drops `authorization` and `cookie`, but not other headers, such as
-   * an `x-api-key`.
+   * How 3xx responses are handled. Default: with a `baseUrl`, redirects are
+   * followed on the client's origin only, and one to another origin fails
+   * with `HttpNetworkError`; without one, fetch's `follow`. Set `follow` to
+   * follow redirects anywhere: fetch then drops `authorization` and `cookie`
+   * on a cross-origin redirect, but not other headers, such as an `x-api-key`.
    */
   redirect?: 'follow' | 'error' | 'manual' | undefined;
   /** Connection pool, proxy or TLS settings (an undici `Agent` or `ProxyAgent`). */

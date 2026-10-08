@@ -418,6 +418,9 @@ describe('HttpClient', () => {
     expect(seen[0]).toBeInstanceOf(HttpTimeoutError);
     expect(error).toBe(seen[0]);
     expect(error.cause).toBeInstanceOf(DOMException);
+    // The server may record the aborted request only after the client gave up;
+    // wait for it so it doesn't land in the next test's `server.requests`
+    await vi.waitFor(() => expect(server.requests).toHaveLength(1));
   });
 
   describe('retries', () => {
@@ -1080,8 +1083,9 @@ describe('HttpClient', () => {
     expect(calls[0].init?.body).toBe('{"a":1}');
   });
 
-  it('loses authorization and cookie on a redirect to another origin, but not other headers', async () => {
-    // What the README's advice on `redirect: 'error'` rests on: fetch's own behavior
+  it('with `redirect: follow`, loses authorization and cookie on a redirect to another origin, but not other headers', async () => {
+    // What the docs' advice on `redirect: 'error'` rests on: fetch's own behavior,
+    // which a client with a `baseUrl` gets only when `follow` is set explicitly
     const other = await startServer(echo);
     const redirecting = await startServer((req, res) => {
       res.writeHead(302, { location: `${other.url}/landing` });
@@ -1090,6 +1094,7 @@ describe('HttpClient', () => {
     try {
       const client = new HttpClient({
         baseUrl: redirecting.url,
+        redirect: 'follow',
         headers: {
           authorization: 'Bearer t0k',
           cookie: 'sid=1',
@@ -1121,9 +1126,12 @@ describe('HttpClient', () => {
     });
     await client.get('/a');
     await client.get('/b', { redirect: 'manual' });
+    await client.get('/c', { redirect: 'follow' });
     expect(inits[0]).toMatchObject({ dispatcher });
-    expect(inits[0].redirect).toBeUndefined();
+    // With a `baseUrl`, the client follows redirects itself (on its origin only)
+    expect(inits[0].redirect).toBe('manual');
     expect(inits[1]).toMatchObject({ dispatcher, redirect: 'manual' });
+    expect(inits[2]).toMatchObject({ dispatcher, redirect: 'follow' });
   });
 
   describe('request validation', () => {
