@@ -15,13 +15,13 @@ export interface ToHttpExceptionOptions {
    * Default none: an upstream failure is *our* 502, and the upstream body
    * (which may describe internals) is not sent to the caller.
    */
-  forward?: boolean | number[];
+  forward?: boolean | number[] | undefined;
   /**
    * Log the failure (`Logger.error`, context `HttpClient`) when it becomes a
    * 5xx. Default `true`: Nest's exception filter never logs an
    * `HttpException`, so the 502/504 would otherwise go unrecorded.
    */
-  log?: boolean;
+  log?: boolean | undefined;
 }
 
 const logger = new Logger('HttpClient');

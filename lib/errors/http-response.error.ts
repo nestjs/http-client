@@ -6,9 +6,9 @@ export interface HttpResponseErrorInit<TBody = unknown> {
   method: string;
   url: string;
   status: number;
-  statusText?: string;
-  headers?: Headers;
-  body?: TBody;
+  statusText?: string | undefined;
+  headers?: Headers | undefined;
+  body?: TBody | undefined;
 }
 
 /** The upstream answered with a non-2xx status (unless `throwOnHttpError: false`). */

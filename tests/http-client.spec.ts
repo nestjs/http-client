@@ -1056,7 +1056,7 @@ describe('HttpClient', () => {
   });
 
   it('accepts a custom fetch, e.g. a stub in unit tests', async () => {
-    const calls: { url: string; init?: RequestInit }[] = [];
+    const calls: { url: string; init?: RequestInit | undefined }[] = [];
     const client = new HttpClient({
       baseUrl: 'https://api.example.com',
       headers: { authorization: 'Bearer t' },

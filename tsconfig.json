@@ -4,6 +4,7 @@
     "moduleResolution": "NodeNext",
     "declaration": true,
     "strict": true,
+    "exactOptionalPropertyTypes": true,
     "removeComments": false,
     "noLib": false,
     "emitDecoratorMetadata": true,

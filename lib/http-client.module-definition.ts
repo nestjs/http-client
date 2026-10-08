@@ -55,7 +55,7 @@ export type HttpClientFactoryOptions = Omit<
   HttpClientOptions,
   'interceptors'
 > & {
-  interceptors?: InterceptorInstance[];
+  interceptors?: InterceptorInstance[] | undefined;
 };
 
 /** What `forRootAsync()`'s factory (or `createHttpClientModuleOptions()`) returns. */
@@ -63,7 +63,7 @@ export type HttpClientModuleFactoryOptions = Omit<
   HttpClientModuleOptions,
   'interceptors'
 > & {
-  interceptors?: InterceptorInstance[];
+  interceptors?: InterceptorInstance[] | undefined;
 };
 
 /**
@@ -73,16 +73,16 @@ export type HttpClientModuleFactoryOptions = Omit<
  */
 interface StructuralExtras {
   /** Classes (created with DI), instances and functions. */
-  interceptors?: HttpClientInterceptorLike[];
+  interceptors?: HttpClientInterceptorLike[] | undefined;
   /** Modules whose exported providers the interceptor classes inject. */
-  imports?: ModuleMetadata['imports'];
+  imports?: ModuleMetadata['imports'] | undefined;
 }
 
 export interface HttpClientRegistrationExtras extends StructuralExtras {
   /** Inject with `@InjectHttpClient(name)`. Without one, this is the default client, injected as `HttpClient`. */
-  name?: string;
+  name?: string | undefined;
   /** Make the client injectable everywhere, not only in the importing module. Default `false`. */
-  isGlobal?: boolean;
+  isGlobal?: boolean | undefined;
 }
 
 /** What `register()` takes. */
@@ -113,7 +113,7 @@ export const { ConfigurableModuleClass, OPTIONS_TYPE, ASYNC_OPTIONS_TYPE } =
         const token = getHttpClientToken(extras.name);
         return {
           ...definition,
-          global: extras.isGlobal,
+          global: extras.isGlobal ?? false,
           imports: withImports(definition, extras.imports),
           providers: [
             ...(definition.providers ?? []),
@@ -270,7 +270,7 @@ function createClientProvider(token: string | typeof HttpClient): Provider {
  */
 function pickInterceptors(
   topLevel: HttpClientInterceptorLike[] | undefined,
-  options: { interceptors?: unknown[] } | undefined,
+  options: { interceptors?: unknown[] | undefined } | undefined,
   method: 'registerAsync' | 'forRootAsync',
 ): HttpClientInterceptorLike[] {
   const structural = (['name', 'isGlobal', 'imports'] as const).find(
