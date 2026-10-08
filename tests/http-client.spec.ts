@@ -318,6 +318,20 @@ describe('HttpClient', () => {
     );
   });
 
+  it('rejects invalid retry options when the client is created, and per request before sending', async () => {
+    expect(
+      () => new HttpClient({ retry: { attempts: Number(undefined) } }),
+    ).toThrow('HttpClient `retry.attempts`: Invalid number of attempts NaN');
+    expect(
+      () => new HttpClient({ retry: { backoff: { factor: NaN } } }),
+    ).toThrow('HttpClient `retry.backoff.factor`: Invalid factor NaN');
+    const client = new HttpClient({ baseUrl: server.url });
+    await expect(client.get('/', { retry: 2.5 })).rejects.toThrow(
+      'HttpClient `retry.attempts`: Invalid number of attempts 2.5',
+    );
+    expect(server.requests).toHaveLength(0);
+  });
+
   it('rejects with the user signal reason when aborted', async () => {
     const client = new HttpClient({ baseUrl: server.url, timeout: 5000 });
     const controller = new AbortController();

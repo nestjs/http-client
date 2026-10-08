@@ -166,6 +166,45 @@ describe('retry helpers', () => {
     );
   });
 
+  it('rejects invalid attempts, factor and jitter with a message naming the option', () => {
+    // e.g. Number(process.env.UNSET): `??` keeps NaN, which would turn retries off
+    expect(() => resolveRetry({ attempts: NaN })).toThrow(
+      'HttpClient `retry.attempts`: Invalid number of attempts NaN',
+    );
+    expect(() => resolveRetry(NaN)).toThrow(
+      'HttpClient `retry.attempts`: Invalid number of attempts NaN',
+    );
+    for (const attempts of [-1, 1.5, Infinity, '3' as unknown as number]) {
+      expect(() => resolveRetry({ attempts })).toThrow(/retry\.attempts/);
+    }
+    // 0 and 1 both mean a single attempt
+    expect(resolveRetry(0)).toBeUndefined();
+    expect(resolveRetry({ attempts: 1 })).toBeUndefined();
+
+    // NaN would make every wait after the first ~1 ms
+    expect(() => resolveRetry({ backoff: { factor: NaN } })).toThrow(
+      'HttpClient `retry.backoff.factor`: Invalid factor NaN',
+    );
+    for (const factor of [-2, Infinity]) {
+      expect(() => resolveRetry({ backoff: { factor } })).toThrow(
+        /retry\.backoff\.factor/,
+      );
+    }
+    expect(resolveRetry({ backoff: { factor: 0 } })?.backoff).toMatchObject({
+      factor: 0,
+    });
+
+    expect(() =>
+      resolveRetry({ backoff: { jitter: 'Full' as 'full' } }),
+    ).toThrow(
+      'HttpClient `retry.backoff.jitter`: Invalid jitter "Full". Use "full", "equal" or "none".',
+    );
+    // Checked even when retries end up off, like the durations
+    expect(() =>
+      resolveRetry({ attempts: 1, backoff: { factor: NaN } }),
+    ).toThrow(/retry\.backoff\.factor/);
+  });
+
   it('treats stream bodies as not replayable', () => {
     expect(isReplayableBody('x')).toBe(true);
     expect(isReplayableBody(new URLSearchParams('a=1'))).toBe(true);
