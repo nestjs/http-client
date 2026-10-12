@@ -25,7 +25,8 @@ export type HttpQuery =
 
 /**
  * - `auto` (default): JSON when the content type says so, otherwise text;
- *   `undefined` for empty bodies, 204/205/304 and HEAD.
+ *   `undefined` for empty bodies, 204/205 and HEAD, and for 304 with
+ *   `throwOnHttpError: false` (by default a 304 throws, like any non-2xx).
  * - `json` / `text` / `arrayBuffer`: read the body as that.
  * - Invalid JSON rejects with `HttpParseError`.
  * - `stream`: a Node `Readable` (body left unread; the timeout stops at headers).
