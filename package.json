@@ -1,7 +1,18 @@
 {
   "name": "@nestjs/http-client",
   "version": "0.0.2",
-  "description": "Nest - modern, fast, powerful node.js web framework (@http-client)",
+  "description": "HTTP client for NestJS built on native fetch: named clients, retries, timeouts, interceptors and typed errors, with no third-party dependencies.",
+  "keywords": [
+    "nestjs",
+    "nest",
+    "http-client",
+    "fetch",
+    "rest-client",
+    "api-client",
+    "retry",
+    "timeout",
+    "interceptors"
+  ],
   "author": "Kamil Mysliwiec",
   "license": "MIT",
   "url": "https://github.com/nestjs/http-client#readme",
