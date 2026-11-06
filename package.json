@@ -1,6 +1,6 @@
 {
   "name": "@nestjs/http-client",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "HTTP client for NestJS built on native fetch: named clients, retries, timeouts, interceptors and typed errors, with no third-party dependencies.",
   "keywords": [
     "nestjs",
