@@ -1041,6 +1041,21 @@ describe('HttpClient', () => {
     );
   });
 
+  it('creates a class interceptor whose intercept() is an arrow-function property', async () => {
+    class ApiKeyInterceptor {
+      intercept = (req: HttpRequest, next: HttpHandler) => {
+        req.headers.set('x-api-key', 'k1');
+        return next(req);
+      };
+    }
+    const client = new HttpClient({
+      baseUrl: server.url,
+      interceptors: [ApiKeyInterceptor],
+    });
+    const res = await client.get<{ headers: Record<string, string> }>('/echo');
+    expect(res.data.headers['x-api-key']).toBe('k1');
+  });
+
   it('streams a large response as a Node Readable', async () => {
     const client = new HttpClient({ baseUrl: server.url });
     const res = await client.get('/large', { responseType: 'stream' });

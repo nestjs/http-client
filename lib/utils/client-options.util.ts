@@ -40,7 +40,9 @@ export function isInterceptorClass(
 ): entry is Type<HttpClientInterceptor> {
   return (
     typeof entry === 'function' &&
-    typeof entry.prototype?.intercept === 'function'
+    (typeof entry.prototype?.intercept === 'function' ||
+      // `intercept = (req, next) => …` is defined on instances, not on the prototype
+      /^class\b/.test(Function.prototype.toString.call(entry)))
   );
 }
 
