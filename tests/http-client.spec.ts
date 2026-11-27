@@ -152,9 +152,12 @@ describe('HttpClient', () => {
   it('keeps the query already in the URL as written when appending `query`', async () => {
     const client = new HttpClient({ baseUrl: server.url, retry: false });
     // e.g. a pagination link from an upstream: only `page=2` is ours to add
-    const link = await client.get<{ url: string }>('/items?q=a%20b&name=caf%E9&flag', {
-      query: { page: 2 },
-    });
+    const link = await client.get<{ url: string }>(
+      '/items?q=a%20b&name=caf%E9&flag',
+      {
+        query: { page: 2 },
+      },
+    );
     expect(link.data.url).toBe('/items?q=a%20b&name=caf%E9&flag&page=2');
     const params = await client.get<{ url: string }>('/items?q=a%20b', {
       query: new URLSearchParams({ page: '2' }),
