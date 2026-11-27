@@ -161,17 +161,23 @@ export function stringify(value: QueryValue): string {
 /** Appends to the URL's existing query; arrays repeat the key, nullish values are skipped. */
 export function appendQuery(url: URL, query?: HttpQuery): URL {
   if (!query) return url;
+  const added = new URLSearchParams();
   if (query instanceof URLSearchParams) {
-    query.forEach((value, key) => url.searchParams.append(key, value));
-    return url;
-  }
-  for (const [key, raw] of Object.entries(query)) {
-    const values = Array.isArray(raw) ? raw : [raw];
-    for (const value of values as QueryValue[]) {
-      if (value === undefined || value === null) continue;
-      url.searchParams.append(key, stringify(value));
+    query.forEach((value, key) => added.append(key, value));
+  } else {
+    for (const [key, raw] of Object.entries(query)) {
+      const values = Array.isArray(raw) ? raw : [raw];
+      for (const value of values as QueryValue[]) {
+        if (value === undefined || value === null) continue;
+        added.append(key, stringify(value));
+      }
     }
   }
+  const pairs = added.toString();
+  if (!pairs) return url;
+  // Appended as text: `url.searchParams.append()` would re-serialize the
+  // query already in the URL (`%20` -> `+`, `?flag` -> `?flag=`).
+  url.search = url.search ? `${url.search}&${pairs}` : pairs;
   return url;
 }
 
